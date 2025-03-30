@@ -15,7 +15,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/simplytrack
     username: postgres
-    password: xxxxx
+    password: simplytrack
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
