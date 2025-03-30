@@ -1,20 +1,23 @@
+
 server:
-  port: 8888
+  port: 8088
 
 spring:
   application:
     name: config-server
-  profiles:
-    active: native
   cloud:
     config:
       server:
-        native:
-          search-locations: 
-            - file://C:/Users/balap/OneDrive/Documents/Code/spring/config-server/src/main/resources/config-repo
-            - classpath:/config-repo
-            - optional:file:./config-repo
+        git:
+          uri: https://github.com/bpeddi/strack-microservices.git
+          clone-on-start: true
+          default-label: main
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
 # spring:
 #   profiles:
 #     active: native
@@ -32,8 +35,3 @@ spring:
   #       format_sql: true
   #   show-sql: true
 
-management:
-  endpoints:
-    web:
-      exposure:
-        include: "*"
