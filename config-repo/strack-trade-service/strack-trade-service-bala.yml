@@ -1,0 +1,35 @@
+server:
+  port: 8081
+
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+management:
+  tracing:
+    sampling:
+      probability: 1.0
+      
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/simplytrack
+    username: postgres
+    password: simplytrack 
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+    show-sql: false
+
+logging:
+  level:
+    root: INFO
+
+jwt:
+  secret: ee1178e613f1bf4ff47b18f89f398c293b6bfdb165fd36439cee8cc2f3c8fabb1ced821daecfbc3ff6b518c0558d4cecb31e84606a6b040568c6ac9d6497359a6edec27cd856cc2e82b1a90f801b18bd17c685565f1d125bfacf03be18de98c3f7b17cd3330f9e42e5369a22efdaaf450bed42ca73c93eed5bec3222412df5a8acaceb5ce9b626d8e89b24a2d76c35702a0100e8c0ace4bd88f564036a27f33a3370d62b5c1ead50829a64dec5d6a0a19e7e69156644de723ef191fe92e79cc5aeb9d0068532e9e6c1849a73ec2014178e59db91a3ab9eefc9ca9d554df968a78a55b99c3817b2e13de51df2c401d14b5f5bfc9fe7d58698d3b977af4a6bfc86
+  expiration: 86400000  # 24 hours in milliseconds
