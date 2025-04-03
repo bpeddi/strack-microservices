@@ -27,7 +27,7 @@
 
 spring:
   application:
-    name: customer-service
+    name:  strack-trade-service
   profiles:
     active: dev
   cloud:
