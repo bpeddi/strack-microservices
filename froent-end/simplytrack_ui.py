@@ -15,26 +15,74 @@ if 'jwt_token' not in st.session_state:
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
+
+
+def download_template():
+    # Create empty DataFrame with required columns
+    df = pd.DataFrame(columns=[
+        'symbol', 'quantity', 'price', 'tradeDate',
+        'commission', 'action', 'netAmount'
+    ])
+    
+    # Create in-memory Excel file
+    output = BytesIO()
+    
+    # Method 1: Using ExcelWriter (recommended)
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Trades')
+    
+    # Method 2: Alternative direct approach
+    # df.to_excel(output, index=False, engine='openpyxl')  # Also works
+    
+    # Set pointer to start of the stream
+    output.seek(0)
+    
+    # Create download button
+    st.download_button(
+        label="📥 Download Excel Template",
+        data=output,
+        file_name="trade_import_template.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
+
 # Login Form
 def login_form():
     with st.form("Login"):
-        username = st.text_input("Username")
+        email = st.text_input("Email")
         password = st.text_input("Password", type="password")
         submit_button = st.form_submit_button("Login")
-        
+# {
+#   "username": "sree123",
+#   "password": "sree123",
+#    "roles": ["ROLE_USER"]
+# }
+
         if submit_button:
             try:
                 response = requests.post(
                     AUTH_API_URL,
-                    json={"username": username, "password": password},
-                    headers={"Content-Type": "application/json"}
+                    json={"email": email, "password": password,"roles": ["ROLE_USER"]},
+                    headers={"User-Agent" : "vscode-restclient" , "Content-Type": "application/json"}
                 )
+
+
+                # Print status code and headers first
+                print(f"Status Code: {response.status_code}")
+                print("Headers:")
+                for header, value in response.headers.items():
+                    print(f"  {header}: {value}")
                 
+                print(response.json())
+                # Print formatted JSON body
+                print("\nResponse Body:")
+                print(json.dumps(response.json(), indent=2))
+
                 if response.status_code == 200:
+                    st.success("Login successful!")
                     st.session_state.jwt_token = response.json().get('token')
                     st.session_state.logged_in = True
                     st.success("Login successful!")
-                    st.experimental_rerun()
+                    st.rerun()
                 else:
                     st.error(f"Login failed: {response.text}")
             except requests.exceptions.RequestException as e:
@@ -100,22 +148,15 @@ def trade_import():
 
     # Download template
     st.markdown("### Need a template?")
-    st.download_button(
-        label="Download Excel Template",
-        data=BytesIO(pd.DataFrame(columns=[
-            'symbol', 'quantity', 'price', 'tradeDate', 
-            'commission', 'action', 'netAmount'
-        ]).to_excel(index=False)),
-        file_name="trade_import_template.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-    )
+    download_template()
+    
 
 # Logout Button
 def logout():
     st.session_state.jwt_token = None
     st.session_state.logged_in = False
     st.success("Logged out successfully!")
-    st.experimental_rerun()
+    st.rerun()
 
 # Main App Logic
 def main():
