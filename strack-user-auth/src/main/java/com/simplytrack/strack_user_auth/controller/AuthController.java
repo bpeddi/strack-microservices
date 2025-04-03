@@ -1,5 +1,8 @@
 package com.simplytrack.strack_user_auth.controller;
 
+import java.util.HashMap;
+import java.util.Map;
+
 // import com.example.strack_user_auth.dto.AuthRequest;
 // import com.example.strack_user_auth.dto.AuthResponse;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -37,19 +40,23 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody User user) {
         Authentication authentication = authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(user.getUsername(), user.getPassword())
+            new UsernamePasswordAuthenticationToken(user.getEmail(), user.getPassword())
         );
 
         UserDetails userDetails = (UserDetails) authentication.getPrincipal();
         String token = jwtTokenUtil.generateToken(userDetails);
-
-        return ResponseEntity.ok(token);
+        Map<String, String> response = new HashMap<>();
+        response.put("token", token);
+        response.put("status", "success");
+        return ResponseEntity.ok().body(response);
+        
+        // return ResponseEntity.ok(token);
     }
     
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
-        if (userRepository.existsByUsername(user.getUsername())) {
-            return ResponseEntity.badRequest().body("Username already exists");
+        if (userRepository.existsByEmail(user.getEmail())) {
+            return ResponseEntity.badRequest().body("Email already exists");
         }
         
         // Encode password before saving

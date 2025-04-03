@@ -16,10 +16,13 @@ public class User {
     private Long id;
     
     @Column(unique = true, nullable = false)
-    private String username;
+    private String email;
     
     @Column(nullable = false)
     private String password;
+
+
+    private String username;
     
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "user_roles", joinColumns = @JoinColumn(name = "user_id"))
@@ -35,12 +38,12 @@ public class User {
         this.id = id;
     }
 
-    public String getUsername() {
-        return username;
+    public String getEmail() {
+        return email;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getPassword() {
@@ -58,4 +61,14 @@ public class User {
     public void setRoles(Set<String> roles) {
         this.roles = roles;
     }
+
+    public String getUsername() {
+        return this.username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+
 }

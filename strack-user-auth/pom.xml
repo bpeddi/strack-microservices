@@ -1,36 +1,35 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Created with Liquid Technologies Online Tools 1.0 (https://www.liquid-technologies.com) -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-parent</artifactId>
-    <version>3.4.4</version>
-    <relativePath />
-    <!-- lookup parent from repository -->
-  </parent>
-  <groupId>com.example</groupId>
-  <artifactId>strack-user-auth</artifactId>
-  <version>0.0.1-SNAPSHOT</version>
-  <name>strack-user-auth</name>
-  <description>project for Simply Track Auth</description>
-  <url />
-  <licenses>
-    <license />
-  </licenses>
-  <developers>
-    <developer />
-  </developers>
-  <scm>
-    <connection />
-    <developerConnection />
-    <tag />
-    <url />
-  </scm>
-  <properties>
-    <java.version>17</java.version>
-	<spring-cloud.version>2022.0.2</spring-cloud.version>
-  </properties>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<parent>
+		<groupId>org.springframework.boot</groupId>
+		<artifactId>spring-boot-starter-parent</artifactId>
+		<version>3.4.4</version>
+		<relativePath/> <!-- lookup parent from repository -->
+	</parent>
+	<groupId>com.simplytrack</groupId>
+	<artifactId>strack-trade-service</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<name>strack-trade-service</name>
+	<description>project for Simply Track Auth</description>
+	<url/>
+	<licenses>
+		<license/>
+	</licenses>
+	<developers>
+		<developer/>
+	</developers>
+	<scm>
+		<connection/>
+		<developerConnection/>
+		<tag/>
+		<url/>
+	</scm>
+	<properties>
+		<java.version>17</java.version>
+		<spring-cloud.version>2024.0.1</spring-cloud.version>
+	</properties>
   <dependencies>
     <dependency>
       <groupId>org.springframework.boot</groupId>
@@ -74,9 +73,9 @@
       <artifactId>jjwt-jackson</artifactId>
       <version>0.11.5</version>
     </dependency>
-  	<dependency>
+		<dependency>
 			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 		</dependency>
 					<!-- Spring Cloud Config Client -->
 		<dependency>
