@@ -1,0 +1,66 @@
+POST http://localhost:8080/api/auth/register
+User-Agent: vscode-restclient
+content-type: application/json
+
+{
+  "email" : "vamsi@mail.com",
+  "username": "vamsi",
+  "password": "vamsi123",
+   "roles": ["ROLE_USER"]
+}
+
+
+
+POST http://localhost:8080/api/auth/login
+User-Agent: vscode-restclient
+Content-Type: application/json
+
+{
+  "email" : "vamsi@mail.com",
+  "password": "vamsi123",
+   "roles": ["ROLE_USER"]
+}
+
+POST http://localhost:8081/api/trades
+User-Agent: vscode-restclient
+content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6W3siYXV0aG9yaXR5IjoiUk9MRV9VU0VSIn1dLCJzdWIiOiJ2YW1zaSIsImlhdCI6MTc0MzcyMzE1NiwiZXhwIjoxNzQzODA5NTU2fQ.e-L7T-O5P0Hv8Pwqxpvnjfgg4Q8sCqAxhBaC7TmWlG4
+
+{
+  	"action" : "SELL",
+	"commission" : 9.99,
+	"net_amount" : 0,
+	"price" : 210,
+	"quantity" : 100,
+	"symbol" : "TSLA", 
+	"trade_date" : "2023-09-18T10:15:00",
+	"user_id" : "vamsi"
+}
+
+
+POST http://localhost:8081/api/trades/batch
+User-Agent: vscode-restclient
+content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6W3siYXV0aG9yaXR5IjoiUk9MRV9UUkFERVIifSx7ImF1dGhvcml0eSI6IlJPTEVfVVNFUiJ9XSwic3ViIjoic3JlZTEyMyIsImlhdCI6MTc0MzcwMzE0MCwiZXhwIjoxNzQzNzg5NTQwfQ.G0SNPYbIVC9DOCn4LjSQCW2pXNWDsyEijcmFeClUh0Y
+
+[
+  {
+    "symbol": "MSFT",
+    "quantity": 8,
+    "price": 300.00,
+    "tradeDate": "2023-08-18T09:30:00",
+    "commission": 8.00,
+    "action": "BUY",
+    "netAmount": 2408.00
+  },
+  {
+    "symbol": "AMZN",
+    "quantity": 2,
+    "price": 125.75,
+    "tradeDate": "2023-08-18T10:15:00",
+    "commission": 5.00,
+    "action": "SELL",
+    "netAmount": 246.50
+  }
+]
+

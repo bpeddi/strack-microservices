@@ -3,6 +3,7 @@ package com.simplytrack.strack_trade_service.entity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.function.Supplier;
 
 @Entity
 @Table (name = "trades")
@@ -10,6 +11,7 @@ public class Trade {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+    @Column(nullable = false)
     private String userId;
     private String symbol;
     private int quantity;

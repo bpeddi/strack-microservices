@@ -83,7 +83,12 @@
 				<groupId>org.springframework.cloud</groupId>
 				<artifactId>spring-cloud-starter-config</artifactId>
 			</dependency>
-
+			<dependency>
+				<groupId>org.projectlombok</groupId>
+				<artifactId>lombok</artifactId>
+				<version>1.18.30</version> <!-- or latest version -->
+				<scope>provided</scope>
+			</dependency>
 			<!-- Add this if using Spring Boot 3.x -->
 			<dependency>
 				<groupId>org.springframework.cloud</groupId>

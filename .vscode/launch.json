@@ -1,0 +1,41 @@
+{
+    "configurations": [
+        {
+            "type": "java",
+            "name": "StrackUserAuthApplication",
+            "request": "launch",
+            "mainClass": "com.simplytrack.strack_user_auth.StrackUserAuthApplication",
+            "projectName": "strack-trade-service"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-StrackTradeServiceApplication<com.simplytrack-strack-trade-service>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.simplytrack.strack_trade_service.StrackTradeServiceApplication",
+            "projectName": "com.simplytrack-strack-trade-service",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-ServiceRegistryApplication<com.simplytrack-service-registry>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.simplytrack.serviceregistry.ServiceRegistryApplication",
+            "projectName": "com.simplytrack-service-registry",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        },
+        {
+            "type": "java",
+            "name": "Spring Boot-ConfigServerApplication<com.simplytrack-config-server>",
+            "request": "launch",
+            "cwd": "${workspaceFolder}",
+            "mainClass": "com.simplytrack.configserver.ConfigServerApplication",
+            "projectName": "com.simplytrack-config-server",
+            "args": "",
+            "envFile": "${workspaceFolder}/.env"
+        }
+    ]
+}

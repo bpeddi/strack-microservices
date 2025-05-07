@@ -48,6 +48,7 @@ public class AuthController {
         Map<String, String> response = new HashMap<>();
         response.put("token", token);
         response.put("status", "success");
+        response.put("user", userDetails.getUsername());
         return ResponseEntity.ok().body(response);
         
         // return ResponseEntity.ok(token);
@@ -55,6 +56,7 @@ public class AuthController {
     
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody User user) {
+        System.out.println(user);
         if (userRepository.existsByEmail(user.getEmail())) {
             return ResponseEntity.badRequest().body("Email already exists");
         }

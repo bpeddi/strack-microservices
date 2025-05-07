@@ -2,7 +2,7 @@ spring:
   application:
     name:  strack-user-auth
   profiles:
-    active: bala
+    active: dev
   cloud:
     config:
       uri: http://localhost:8888

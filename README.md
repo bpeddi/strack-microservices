@@ -6,6 +6,14 @@ This system is a distributed trade management platform built using microservices
 
 ![System Architecture](images/st1.PNG)
 
+
+## Authentication Overview
+
+This system is a distributed trade management platform built using microservices architecture with the following core Authentication componenets:
+
+![System Architecture](images/strack_auth.PNG)
+
+
 ## Architecture Components
 
 ### Core Services
