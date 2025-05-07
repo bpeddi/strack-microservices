@@ -16,13 +16,16 @@ export function convertToDate(mydate: string, debug: boolean = false): Date | nu
   function checkDateFormat(dateStr: string, format: string): Date | null {
     try {
       // Using luxon for robust date parsing (using ES module import at the top level)
-      const parsed = DateTime.fromFormat(dateStr, format, { locale: 'en-US' });
+      const parsed = DateTime.fromFormat(dateStr, format, { 
+        locale: 'en-US' ,
+        zone: 'utc' // Add this line to force UTC parsing
+      });
       
       if (parsed.isValid) {
         if (debug) {
           console.log(`Successfully parsed "${dateStr}" using format "${format}"`);
         }
-        return parsed.toJSDate();
+        return parsed.toUTC().toJSDate();
       } else {
         // Parsing completed but resulted in an invalid date
         failedFormats.push(`Format "${format}" - Invalid result: ${parsed.invalidReason}`);

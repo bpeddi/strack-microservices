@@ -90,21 +90,21 @@ export const ImportWorkflow = ({ token, onComplete, onSwitchToManage }: ImportWo
 
             // console.log('json data', jsonData)
             // Convert Date objects to formatted strings (MM/DD/YYYY)
-            const processedData = jsonData.map(row =>
-                row.map(cell => {
-                    if (cell instanceof Date) {
-                        const month = String(cell.getMonth() + 1).padStart(2, '0');
-                        const day = String(cell.getDate()).padStart(2, '0');
-                        const year = cell.getFullYear();
-                        return `${month}/${day}/${year}`;
-                    }
-                    return cell;
-                })
-            );
+            // const processedData = jsonData.map(row =>
+            //     row.map(cell => {
+            //         if (cell instanceof Date) {
+            //             const month = String(cell.getMonth() + 1).padStart(2, '0');
+            //             const day = String(cell.getDate()).padStart(2, '0');
+            //             const year = cell.getFullYear();
+            //             return `${month}/${day}/${year}`;
+            //         }
+            //         return cell;
+            //     })
+            // );
             // console.log('processed data', processedData)
 
             // Trim all string values
-            const trimmedData = trimDataValues(processedData as any[][]);
+            const trimmedData = trimDataValues(jsonData as any[][]);
 
             // Rest of your processing logic remains the same
             if (trimmedData.length === 0) {
@@ -184,12 +184,26 @@ export const ImportWorkflow = ({ token, onComplete, onSwitchToManage }: ImportWo
                         }
                         // Handle date fields - ensure we use the updated format for LocalDateTime
                         else if (fieldKey === 'tradeDate') {
+
+                            // try {
+                            //     // Use the updated parseDate function that returns ISO format with time
+                            //     trade[fieldKey] = parseDate(value.toString());
+                            // } catch (e) {
+                            //     throw new Error(`Invalid date format for tradeDate: ${value}`);
+                            // }
                             try {
-                                // Use the updated parseDate function that returns ISO format with time
-                                trade[fieldKey] = parseDate(value.toString());
+                                const newDate = convertToDate(value.toString(), true);
+                                if (newDate) {
+                                    trade[fieldKey] = newDate.toISOString().slice(0, 19).replace('Z', '').split('.')[0];;
+                                } else {
+                                    console.warn(`Invalid date value: ${newDate}. Using current date as fallback.`);
+                                    trade[fieldKey] = new Date().toISOString().slice(0, 19);;
+                                }
+
                             } catch (e) {
                                 throw new Error(`Invalid date format for tradeDate: ${value}`);
                             }
+
                         }
                         // Handle all other fields
                         else {
@@ -333,7 +347,7 @@ export const ImportWorkflow = ({ token, onComplete, onSwitchToManage }: ImportWo
     //     return null;
     // }
 
- 
+
     const handleSubmitTrades = async () => {
         // Check if we have trades to submit
         if (parsedTrades.length === 0) {
@@ -395,7 +409,7 @@ export const ImportWorkflow = ({ token, onComplete, onSwitchToManage }: ImportWo
             setIsUploading(false);
         }
     };
-  
+
 
     // Update handleNext function
     const handleNext = () => {
@@ -532,12 +546,12 @@ export const ImportWorkflow = ({ token, onComplete, onSwitchToManage }: ImportWo
 
                                 <div className="space-y-2">
                                     <p className="text-sm">
-                                        Successful imports: {parsedTrades.length }
+                                        Successful imports: {parsedTrades.length}
                                     </p>
                                     {errors.length > 0 && (
                                         <>
                                             <p className="text-sm text-red-600">
-                                            Errors occurred in {errors.length} lines. The following lines are rejected. 
+                                                Errors occurred in {errors.length} lines. The following lines are rejected.
                                             </p>
                                             <div className="text-sm bg-red-50 p-3 rounded-md">
                                                 {errors.map((error, index) => (

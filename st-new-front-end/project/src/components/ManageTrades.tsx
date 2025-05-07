@@ -1,35 +1,43 @@
 // src/components/ManageTrades.tsx
-import React, { useRef, useState, useEffect } from 'react';
+// This component provides a full-featured interface for managing user stock trades
+// including fetching, filtering, sorting, pagination, selection, editing, deleting, and adding trades.
 
-import axios from 'axios';
-import { Trade } from '../types';
-import { HelpCircle, X, ChevronUp, ChevronDown } from 'lucide-react';
-import { convertToDate } from './trades-import/ConvertToDate';
+import React, { useRef, useState, useEffect } from 'react';
+import axios from 'axios'; // HTTP client for API calls
+import { Trade } from '../types'; // Trade interface/type definition
+import { HelpCircle, X, ChevronUp, ChevronDown } from 'lucide-react'; // Icon components
+import { convertToDate } from './trades-import/ConvertToDate'; // Utility to parse/convert date strings
+
 interface ManageTradesProps {
-  token: string | null;
-  isAuthenticated: boolean;
-  refreshCount: boolean;
+  token: string | null;            // JWT or authentication token for API calls
+  isAuthenticated: boolean;        // Flag indicating if user is logged in
+  refreshCount: boolean;           // Signal to re-fetch trades when toggled
 }
 
 const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, refreshCount }) => {
-  const [trades, setTrades] = useState<Trade[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
-  // Keep all other state variables related to management:
+  // Main state hooks
+  const [trades, setTrades] = useState<Trade[]>([]);           // Array of all trades fetched
+  const [isLoading, setIsLoading] = useState(true);            // Loading flag for initial data fetch
+  const [error, setError] = useState('');                      // Error message for fetch failures
 
-  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  // User interaction state
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);  // IDs of trades selected by user (for bulk actions)
+  const [editingId, setEditingId] = useState<number | null>(null);// ID of the trade currently in edit mode
+  const [editFormData, setEditFormData] = useState<Trade | null>(null);// Holds edited field values
 
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editFormData, setEditFormData] = useState<Trade | null>(null);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchTerm, setSearchTerm] = useState('');
+  // Pagination and filtering state
+  const [currentPage, setCurrentPage] = useState(1);            // Current page in pagination
+  const [searchTerm, setSearchTerm] = useState('');             // Text filter for symbol/action
+  const [tradesPerPage, setTradesPerPage] = useState<number>(10);// Number of rows per page
 
-  // New state variables for improvements
-  const [tradesPerPage, setTradesPerPage] = useState<number>(10);
-  const [showAddForm, setShowAddForm] = useState<boolean>(false);
-  // Sort state variables
-  const [sortField, setSortField] = useState<keyof Trade>('tradeDate');
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc'); // Newest first by default
+  // UI state
+  const [showAddForm, setShowAddForm] = useState<boolean>(false);// Toggle to show/hide "Add New Trade" form
+
+  // Sorting state
+  const [sortField, setSortField] = useState<keyof Trade>('tradeDate'); // Which field to sort on
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc'); // Sort order
+
+    // State for new trade form
   const [newTradeData, setNewTradeData] = useState<Partial<Trade>>({
     action: 'BUY',
     symbol: '',
@@ -39,48 +47,48 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
     netAmount: 0,
     tradeDate: new Date().toISOString().split('T')[0]
   });
-// Add this inside your component
-const inputRef = useRef<HTMLInputElement>(null);
-const allIds = trades.map(trade => trade.id);
 
-// Check if all items are selected
-const isAllSelected = allIds.length > 0 && allIds.every(id => selectedIds.includes(id));
-// Check if some (but not all) items are selected
-const isSomeSelected = !isAllSelected && selectedIds.length > 0;
 
-  // useEffect(() => {
-  //   if (isAuthenticated && token) {
-  //     fetchTrades();
-  //     console.log("fetching trades")
-  //   }
-  //   if (inputRef.current) {
-  //     inputRef.current.indeterminate = isSomeSelected;
-  //   }
-  // }, [refreshCount]);
+  // Ref for "select all" checkbox (for indeterminate state)
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Derived state: all trade IDs
+  const allIds = trades.map(trade => trade.id);
+  // Are all rows selected?
+  const isAllSelected = allIds.length > 0 && allIds.every(id => selectedIds.includes(id));
+  // Are some (but not all) rows selected?
+  const isSomeSelected = !isAllSelected && selectedIds.length > 0;
 
   // Separate useEffect for fetching trades
-useEffect(() => {
-  if (isAuthenticated && token) {
-    fetchTrades();
-    console.log("fetching trades");
-  }
-}, [refreshCount]); // Only runs when refreshCount changes
+    /**
+   * Effect: Fetch trades when authentication state changes or refreshCount toggles
+   */
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      fetchTrades();
+      console.log("fetching trades");
+    }
+  }, [refreshCount]); // Only runs when refreshCount changes
 
-// Separate useEffect for checkbox state
-useEffect(() => {
-  if (inputRef.current) {
-    inputRef.current.indeterminate = isSomeSelected;
-  }
-}, [isSomeSelected]); // Runs only when selection state changes
+  /**
+   * Effect: Update indeterminate state of "select all" checkbox
+   */
+  useEffect(() => {
+    if (inputRef.current) {
+      inputRef.current.indeterminate = isSomeSelected;
+    }
+  }, [isSomeSelected]); // Runs only when selection state changes
 
-// Separate useEffect for initial auth check (if needed)
-useEffect(() => {
-  if (isAuthenticated && token) {
-    fetchTrades();
-  }
-}, [isAuthenticated, token]); // Optional: fetch on auth changes
+  // Separate useEffect for initial auth check (if needed)
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      fetchTrades();
+    }
+  }, [isAuthenticated, token]); // Optional: fetch on auth changes
 
-//isSomeSelected
+    /**
+   * Toggle selection of a single row by ID
+   */
   const toggleSelectAll = () => {
     if (selectedIds.length === allIds.length) {
       setSelectedIds([]);
@@ -90,7 +98,9 @@ useEffect(() => {
   };
 
 
-
+  /**
+   * Fetch all trades from backend API, update state, handle errors
+   */
   const fetchTrades = async () => {
     try {
       setIsLoading(true);
@@ -110,6 +120,9 @@ useEffect(() => {
     }
   };
 
+  /**
+   * Filter trades by symbol or action based on searchTerm (case-insensitive)
+   */
   const filteredTrades = trades.filter(trade =>
     trade.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
     trade.action.toLowerCase().includes(searchTerm.toLowerCase())
@@ -118,6 +131,9 @@ useEffect(() => {
   const totalPages: number = Math.ceil(filteredTrades.length / tradesPerPage);
 
   // Sort trades based on current sort field and direction
+    /**
+   * Sort filtered trades by sortField & sortDirection
+   */
   const sortedTrades = [...filteredTrades].sort((a, b) => {
     if (sortField === 'tradeDate') {
       const dateA = new Date(a[sortField]).getTime();
@@ -136,11 +152,15 @@ useEffect(() => {
     }
   });
 
+  // Slice sorted trades for current page
   const paginatedTrades = sortedTrades.slice(
     (currentPage - 1) * tradesPerPage,
     currentPage * tradesPerPage
   );
 
+ /**
+   * Toggle selection of a single row by ID
+   */
   const toggleSelect = (id: number) => {
     setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
@@ -175,21 +195,27 @@ useEffect(() => {
       // Optionally show error to user
     }
   };
-
+  // Handler to refresh the table manually
   const refreshTable = () => {
     fetchTrades()
   };
-
+ /**
+   * Enter edit mode for a specific trade row
+   */
   const startEdit = (trade: Trade) => {
     setEditingId(trade.id);
     setEditFormData(trade); // Store the ENTIRE trade object
   };
-
+  /**
+   * Cancel edit mode, revert form data
+   */
   const cancelEdit = () => {
     setEditingId(null);
     setEditFormData({});
   };
-
+  /**
+   * Save edited trade: optimistic UI update then backend PUT
+   */
   const saveEdit = async (id: number) => {
     if (!editFormData) return;
 
@@ -214,23 +240,24 @@ useEffect(() => {
     }
   };
 
-  // New function to add a trade
+  /**
+   * Add a new trade: prepare data, call API, update UI
+   */
   const addNewTrade = async () => {
     try {
       // Calculate netAmount if not provided
       if (!newTradeData.netAmount && newTradeData.quantity && newTradeData.price) {
         newTradeData.netAmount =
-          (newTradeData.action?.toLowerCase() === 'buy' ? -1 : 1) *
           (newTradeData.quantity * newTradeData.price) -
           (newTradeData.commission || 0);
       }
-            const newDate = convertToDate(newTradeData.tradeDate, true);
-            if (newDate) { 
-                  newTradeData.tradeDate = newDate.toISOString().slice(0, 19).replace('Z', '');
-            } else {
-                  console.warn(`Invalid date value: ${newDate}. Using current date as fallback.`);
-                  newTradeData.tradeDate = new Date().toISOString().slice(0, 19);
-            }
+      const newDate = convertToDate(newTradeData.tradeDate, true);
+      if (newDate) {
+        newTradeData.tradeDate = newDate.toISOString().slice(0, 19).replace('Z', '');
+      } else {
+        console.warn(`Invalid date value: ${newDate}. Using current date as fallback.`);
+        newTradeData.tradeDate = new Date().toISOString().slice(0, 19);
+      }
 
       const response = await axios.post(
         'http://localhost:8081/api/trades',
@@ -263,12 +290,16 @@ useEffect(() => {
     }
   };
 
-  // Handle input change for add form
+  /**
+   * Handle input changes in "Add New Trade" form
+   */
   const handleAddFormChange = (field: string, value: string | number) => {
     setNewTradeData(prev => ({ ...prev, [field]: value }));
   };
 
-  // Function to handle sorting
+  /**
+   * Handle click on table headers to sort by that column
+   */
   const handleSort = (field: keyof Trade) => {
     // If clicking the same field, toggle direction
     if (field === sortField) {
@@ -302,30 +333,24 @@ useEffect(() => {
                 Trade Instructions
               </h2>
             </div>
-            <div className="space-y-4 text-gray-700">
-              <p className="text-sm leading-relaxed">
-                In this window you can <strong className="text-blue-700">add a new trade</strong>,{' '}
-                <strong className="text-blue-700">edit existing trades</strong>,{' '}
-                <strong className="text-blue-700">remove trades</strong>, and{' '}
-                <strong className="text-blue-700">export transactions</strong> to Excel/CSV formats.
-              </p>
+                <div className="space-y-2 text-gray-700">
+                  <p className="text-pretty leading-relaxed">
+                    In this window you can <strong className="text-blue-700">add a new trade</strong>,{' '}
+                    <strong className="text-blue-700">edit existing trades</strong>,{' '}
+                    <strong className="text-blue-700">remove trades</strong>, and{' '}
+                    <strong className="text-blue-700">export transactions</strong> to Excel/CSV formats.
+                  </p>
 
-              <p className="text-sm leading-relaxed">
-                Filter trades by <span className="text-purple-700 font-medium">Symbol</span>,{' '}
-                <span className="text-purple-700 font-medium">Account</span>,{' '}
-                <span className="text-purple-700 font-medium">Options</span>, or{' '}
-                <span className="text-purple-700 font-medium">Stocks</span> using the advanced filtering system.
-              </p>
-
-              <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-                <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1">Capacity Note</p>
-                <p className="text-sm text-gray-700">
-                  Simply Track supports up to <strong className="text-green-700">50,000 trades</strong> with
-                  lightning-fast loading and efficient management capabilities.
-                </p>
+                  <p className="text-sm leading-relaxed">
+                    Filter trades by <span className="text-purple-700 font-medium">Symbol</span>,{' '}
+                    <span className="text-purple-700 font-medium">Account</span>,{' '}
+                    <span className="text-purple-700 font-medium">Options</span>, or{' '}
+                    <span className="text-purple-700 font-medium">Stocks</span> using the advanced filtering system.   
+                    Simply Track supports up to <strong className="text-green-700">50,000 trades</strong> with
+                    lightning-fast loading and efficient management capabilities.
+                  </p>
+                </div>
               </div>
-            </div>
-          </div>
 
           <div className="flex justify-between items-center mb-4 mt-6">
             <h2 className="text-lg font-bold text-gray-800">Trade Table</h2>
@@ -385,18 +410,18 @@ useEffect(() => {
           </div>
 
           <table className="min-w-full table-auto text-sm border-collapse">
-            <thead className=" bg-blue-100/80 text-blue-800">
+            <thead className=" bg-blue-100 text-blue-800">
               <tr>
-          
+
                 <th className="p-2 text-left">
-                <input
-                  type="checkbox"
-                  checked={isAllSelected}
-                  ref={inputRef} // Needed for indeterminate state
-                  onChange={toggleSelectAll}
-                  className="cursor-pointer form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
-                />
-              </th>
+                  <input
+                    type="checkbox"
+                    checked={isAllSelected}
+                    ref={inputRef} // Needed for indeterminate state
+                    onChange={toggleSelectAll}
+                    className="cursor-pointer form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
+                  />
+                </th>
 
 
                 <th
@@ -583,7 +608,8 @@ useEffect(() => {
                             {trade.action}
                           </span>
                         </td>
-                        <td className="p-2">{new Date(trade.tradeDate).toLocaleString()}</td>
+                        {/* <td className="p-2">{new Date(trade.tradeDate).toLocaleString()}</td> */}
+                        <td className="p-2">{trade.tradeDate}</td>
                         <td className="p-2 font-medium">{trade.symbol}</td>
                         <td className="p-2">{trade.quantity}</td>
                         <td className="p-2">${trade.price.toFixed(2)}</td>
