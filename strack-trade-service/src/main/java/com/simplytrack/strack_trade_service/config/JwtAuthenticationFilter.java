@@ -39,7 +39,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             System.out.println("I received token " + jwtToken);
             try {
                 username = jwtTokenUtil.getUsernameFromToken(jwtToken);
-                logger.info(" username = " + username, null);
+                // logger.info(" username = " + username, null);
                 // Extract roles from token claims
                 List<Map<String, String>> roles = jwtTokenUtil.getClaimFromToken(jwtToken, claims -> {
                     try {
@@ -58,7 +58,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                     
                     UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
                             username, null, authorities);
-                    logger.info(" authentication = " + authentication, null);        
+                    // logger.info(" authentication = " + authentication, null);        
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 }

@@ -64,3 +64,48 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6W3siYXV0aG9yaXR5IjoiUk9MR
   }
 ]
 
+
+POST http://localhost:8081/api/trades/batch
+User-Agent: vscode-restclient
+content-type: application/json
+Authorization: Bearer eyJhbGciOiJIUzI1NiJ9.eyJyb2xlcyI6W3siYXV0aG9yaXR5IjoiUk9MRV9VU0VSIn1dLCJzdWIiOiJ2YW1zaSIsImlhdCI6MTc0NjY0NTc1NywiZXhwIjoxNzQ2NzMyMTU3fQ.6f6H9MF1rWcCVwFD_T4wDN2j822BJh1WLD4LYmj9W40
+
+[
+  {
+    "trade_type" : "STOCK",
+    "symbol": "MSFT",
+    "quantity": 8,
+    "price": 300.00,
+    "tradeDate": "2023-08-18T09:30:00",
+    "commission": 8.00,
+    "action": "BUY",
+    "netAmount": 2408.00
+  },
+  {
+    "trade_type" : "STOCK",
+    "symbol": "AMZN",
+    "quantity": 2,
+    "price": 125.75,
+    "tradeDate": "2023-08-18T10:15:00",
+    "commission": 5.00,
+    "action": "SELL",
+    "netAmount": 246.50
+  },
+  {
+    "trade_type" : "OPTION",
+    "symbol": "META",
+    "quantity": 2,
+    "price": 125.75,
+    "tradeDate": "2023-08-18T10:15:00",
+    "commission": 5.00,
+    "action": "SELL",
+    "netAmount": 246.50, 
+    "fee" : 0.23,
+    "expiration_date" : "2023-08-18T10:15:00",
+	  "option_type" : "CALL",
+	  "shares_per_contract" : 100,
+	  "strike_price" :  580.00 ,
+	  "usymbol" : "META250502C580"
+  }
+]
+

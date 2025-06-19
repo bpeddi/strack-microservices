@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trade } from '../../types'; // Assuming you have a types file
+import { Trade } from '../../types/indexold'; // Assuming you have a types file
 
 interface DataPreviewProps {
     data: Omit<Trade, 'id'>[];

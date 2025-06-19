@@ -38,7 +38,7 @@ export function convertToDate(mydate: string, debug: boolean = false): Date | nu
     }
   }
 
-  console.log('Input date = ',mydate )
+  // console.log('Input date = ',mydate )
   // Try different date formats
   rdate = checkDateFormat(mydate, 'd-MMM-yyyy');
   if (rdate !== null) {

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { MatchedTrade } from '../types';
+import { MatchedTrade } from '../types/indexold';
 
 const MatchTradesPage: React.FC = () => {
   const { user } = useAuth();

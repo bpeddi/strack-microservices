@@ -1,22 +1,24 @@
-// src/components/ManageTrades.tsx
+// src/components/TradeMatching.tsx
 // This component provides a full-featured interface for managing user stock trades
 // including fetching, filtering, sorting, pagination, selection, editing, deleting, and adding trades.
 
 import React, { useRef, useState, useEffect } from 'react';
 import axios from 'axios'; // HTTP client for API calls
-import { Trade } from '../types/Trade'; // Trade interface/type definition
+import { MatchedTrade } from '../types/MatchedTrade';
 import { HelpCircle, X, Download, ChevronUp, ChevronDown } from 'lucide-react'; // Icon components
 import { convertToDate } from './trades-import/ConvertToDate'; // Utility to parse/convert date strings
 import { logger } from './logger';
-interface ManageTradesProps {
+
+interface TradeMatchingProps {
   token: string | null;            // JWT or authentication token for API calls
-  isAuthenticated: boolean;        // Flag indicating if user is logged in
-  refreshCount: boolean;           // Signal to re-fetch trades when toggled
+  isAuthenticated: boolean;        // Flag indicating if user is logged in          // Signal to re-fetch trades when toggled
 }
 
-const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, refreshCount }) => {
+const TradeMatching: React.FC<TradeMatchingProps> = ({ token, isAuthenticated }) => {
   // Main state hooks
-  const [trades, setTrades] = useState<Trade[]>([]);           // Array of all trades fetched
+  const [selectedMethod, setSelectedMethod] = useState("FIFO");
+  const [trades, setTrades] = useState<MatchedTrade[]>([]);   
+  const [numberOfTrades, setNumberOfTrades] = useState(0);            // Array of all trades fetched
   const [isLoading, setIsLoading] = useState(true);            // Loading flag for initial data fetch
   const [error, setError] = useState('');                      // Error message for fetch failures
 
@@ -39,6 +41,7 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
 
   // Avoid delete double click 
   const [isDeleting, setIsDeleting] = useState(false);
+    const [showDetails, setShowDetails] = useState(false);
 
   // State for new trade form
   const [newTradeData, setNewTradeData] = useState<Partial<Trade>>({
@@ -63,8 +66,7 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
    */
   const filteredTrades = trades.filter(trade =>
     trade.symbol.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trade.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trade.portfolioName.toLowerCase().includes(searchTerm.toLowerCase()) 
+    trade.action.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const totalPages: number = Math.ceil(filteredTrades.length / tradesPerPage);
@@ -91,10 +93,10 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
  */
   useEffect(() => {
     if (isAuthenticated && token) {
-      fetchTrades();
+      fetchTradeCount();
       logger.debug("fetching trades");
     }
-  }, [refreshCount]); // Only runs when refreshCount changes
+  }, [numberOfTrades,isAuthenticated, token]); // Only runs when refreshCount changes
 
   /**
    * Effect: Update indeterminate state of "select all" checkbox
@@ -106,11 +108,11 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
   }, [isSomeSelected]); // Runs only when selection state changes
 
   // Separate useEffect for initial auth check (if needed)
-  useEffect(() => {
-    if (isAuthenticated && token) {
-      fetchTrades();
-    }
-  }, [isAuthenticated, token]); // Optional: fetch on auth changes
+  // useEffect(() => {
+  //   if (isAuthenticated && token) {
+  //     fetchMatchedTrades();
+  //   }
+  // }, [isAuthenticated, token]); // Optional: fetch on auth changes
 
   /**
  * Toggle selection of a single row by ID
@@ -134,18 +136,67 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
     }
   };
 
+    const fetchTradeCount = async () => {
+      try {
+        setIsLoading(true);
+        const response = await axios.get(`http://localhost:8081/api/trades/tradeCount`, {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        });
+        setNumberOfTrades(response.data);
+        setCurrentPage(1);
+        setError('');
+        logger.debug("trades fetched", response.data)
+      } catch (err: any) {
+        setError('Failed to fetch trade count');
+         setNumberOfTrades(0);
+        console.error(err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  /**
+    /**
    * Fetch all trades from backend API, update state, handle errors
    */
-  const fetchTrades = async () => {
+  const fetchMatchedTrades = async () => {
     try {
       setIsLoading(true);
-      const response = await axios.get<Trade[]>(`http://localhost:8081/api/trades`, {
+      const response = await axios.get<Trade[]>(`http://localhost:8081/api/trades/matchedTrades`, {
         headers: {
           Authorization: `Bearer ${token}`
         }
       });
+      setTrades(response.data);
+      setCurrentPage(1);
+      setError('');
+      logger.debug("trades fetched", response.data)
+    } catch (err: any) {
+      setError('Failed to fetch trades');
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  /**
+   * Fetch all trades from backend API, update state, handle errors
+   */
+  const handleStartMatching = async () => {
+    console.log(`Starting trade matching with method: ${selectedMethod}`);
+    try {
+      setIsLoading(true);
+ 
+      const response = await axios.post(
+        'http://localhost:8081/api/trades/match',
+        {
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+
+        }
+      );
+
+
       setTrades(response.data);
       setCurrentPage(1);
       setError('');
@@ -230,14 +281,14 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
     setCurrentPage(1);
     setProgress(0);
     // Optionally refresh trade data here
-    await fetchTrades();
+    await fetchMatchedTrades();
   };
 
 
 
   // Handler to refresh the table manually
   const refreshTable = () => {
-    fetchTrades()
+    fetchMatchedTrades()
   };
   /**
     * Enter edit mode for a specific trade row
@@ -277,9 +328,8 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
 
     } catch (err) {
       console.error('Failed to save trade', err);
-
+      fetchMatchedTrades(); // Re-fetch original data on error
     } finally {
-      fetchTrades(); // Re-fetch original data on error
       setEditFormData(null);
     }
   };
@@ -384,14 +434,9 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
 
   return (
     <div className="bg-gray-50 shadow-sm rounded-lg p-6">
-      <h2 className="text-xl font-semibold text-gray-800 mb-4">Your Trades</h2>
+      <h2 className="text-xl font-semibold text-gray-800 mb-4">Trade Matching</h2>
 
-      {isLoading ? (
-        <div className="flex flex-col items-center justify-center py-10">
-          <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-blue-500 mb-4"></div>
-          <p className="text-gray-600 text-lg">Loading trades...</p>
-        </div>
-      ) : trades.length === 0 ? (
+      { numberOfTrades === 0 ? (
         <div className="text-center py-4">
           <p className="text-gray-500">No trades found. Import some trades to get started.</p>
         </div>
@@ -401,28 +446,75 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
           <div className="bg-gradient-to-br from-white to-gray-50 p-8 rounded-3xl shadow-lg border border-gray-100 transition-all hover:shadow-xl">
             <div className="mb-6 pb-4 border-b border-gray-100">
               <h2 className="text-2xl font-bold text-gray-900 mb-2 flex items-center">
-                <span className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg mr-3 text-lg">📋</span>
-                Trade Instructions
+                <span className="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg mr-3 text-lg">🧮</span>
+                Trade Matching
               </h2>
             </div>
-            <div className="space-y-2 text-gray-700">
-              <p className="text-pretty leading-relaxed">
-                In this window you can <strong className="text-blue-700">add a new trade</strong>,{' '}
-                <strong className="text-blue-700">edit existing trades</strong>,{' '}
-                <strong className="text-blue-700">remove trades</strong>, and{' '}
-                <strong className="text-blue-700">export transactions</strong> to Excel/CSV formats.
-              </p>
+         <div className="space-y-4 text-gray-700 leading-relaxed">
+      <p>
+        <strong>Trade Matching Window</strong>
+      </p>
+      <p>
+        In this window, you will perform trade matching. <strong>Simply Track</strong> automatically checks every sell/short-covered trade against its corresponding buy/short trade and calculates the profit or loss for each matched pair.
+      </p>
 
-              <p className="text-sm leading-relaxed">
-                Filter trades by <span className="text-purple-700 font-medium">Symbol</span>,{' '}
-                <span className="text-purple-700 font-medium">Account</span>,{' '}
-                <span className="text-purple-700 font-medium">Options</span>, or{' '}
-                <span className="text-purple-700 font-medium">Stocks</span> using the advanced filtering system.
-                Simply Track supports up to <strong className="text-green-700">50,000 trades</strong> with
-                lightning-fast loading and efficient management capabilities.
-              </p>
-            </div>
+      {/* Toggle Header */}
+      <button
+        onClick={() => setShowDetails(!showDetails)}
+        className="font-semibold text-left text-gray-800 focus:outline-none focus:ring-1 focus:ring-blue-300 rounded-lg"
+      >
+        {showDetails ? "▼ Trade Matching Methods" : "▶ Trade Matching Methods"}
+      </button>
+
+      {/* Collapsible Section */}
+      {showDetails && (
+        <>
+          <div className="font-semibold text-gray-800 mt-2">Key Features</div>
+          <ul className="list-disc ml-6">
+            <li>
+              <strong>✔ Wash Sale Detection</strong> – Simply Track identifies wash sales during matching.{" "}
+              <a href="#" className="text-blue-600 underline">Learn more about wash sales here</a>.
+            </li>
+            <li>
+              <strong>✔ Error Detection</strong> – The system flags issues, such as sell trades without corresponding buy trades.
+            </li>
+            <li>
+              <strong>✔ Tax Optimization Insights</strong> – After matching, Simply Track suggests tax-efficient strategies by highlighting stocks that could provide tax benefits (e.g., avoiding wash sales).
+            </li>
+          </ul>
+
+          <p className="mt-4">
+            Once matching is complete, you can:{" "}
+            <strong>Review updated trades, Run various reports and Optimize tax strategies</strong>
+          </p>
+        </>
+      )}
+          <div>
+            <label htmlFor="matchingMethod" className="block mb-1 font-medium text-gray-700">Select Method:</label>
+            <select
+              id="matchingMethod"
+              className="w-full sm:w-1/2 border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              value={selectedMethod}
+              onChange={(e) => setSelectedMethod(e.target.value)}
+            >
+              <option value="FIFO">First In, First Out (FIFO) - Recommended</option>
+              <option value="LIFO">Last In, First Out (LIFO)</option>
+            </select>
           </div>
+
+          <div className="pt-6">
+            <button
+              className="bg-blue-500 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-lg transition-all"
+              onClick={handleStartMatching}
+            >
+              Start Matching
+            </button>
+          </div>
+
+    </div>
+          </div>
+
+
 
           <div className="flex justify-between items-center mb-4 mt-6">
             <h2 className="text-lg font-bold text-gray-800">Trade Table</h2>
@@ -508,7 +600,7 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
             </div>
           </div>
 
-          <table className="min-w-full table-auto text-xs border-collapse">
+          <table className="min-w-full table-auto text-sm border-collapse">
             <thead className=" bg-blue-100 text-blue-800">
               <tr>
 
@@ -521,13 +613,15 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
                     className="cursor-pointer form-checkbox h-4 w-4 text-blue-600 transition duration-150 ease-in-out"
                   />
                 </th>
+
+
                 <th
                   className="p-2 text-left cursor-pointer hover:bg-blue-200"
-                  onClick={() => handleSort('portfolioName')}
+                  onClick={() => handleSort('action')}
                 >
                   <div className="flex items-center">
-                    Portfolio
-                    {sortField === 'portfolioName' && (
+                    Action
+                    {sortField === 'action' && (
                       sortDirection === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />
                     )}
                   </div>
@@ -556,17 +650,15 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
                 </th>
                 <th
                   className="p-2 text-left cursor-pointer hover:bg-blue-200"
-                  onClick={() => handleSort('action')}
+                  onClick={() => handleSort('trade_type')}
                 >
                   <div className="flex items-center">
-                    Action
-                    {sortField === 'action' && (
+                    Type
+                    {sortField === 'trade_type' && (
                       sortDirection === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />
                     )}
                   </div>
                 </th>
-
-
                 <th
                   className="p-2 text-left cursor-pointer hover:bg-blue-200"
                   onClick={() => handleSort('quantity')}
@@ -611,17 +703,6 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
                     )}
                   </div>
                 </th>
-                <th
-                  className="p-2 text-left cursor-pointer hover:bg-blue-200"
-                  onClick={() => handleSort('trade_type')}
-                >
-                  <div className="flex items-center">
-                    Type
-                    {sortField === 'trade_type' && (
-                      sortDirection === 'asc' ? <ChevronUp size={16} /> : <ChevronDown size={16} />
-                    )}
-                  </div>
-                </th>
                 <th className="p-2 text-left">Edit</th>
               </tr>
             </thead>
@@ -639,7 +720,16 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
                             onChange={() => toggleSelect(trade.id)}
                           />
                         </td>
-                        <td className="p-2">{trade.portfolioName}</td>
+                        <td>
+                          <select
+                            value={editFormData.action || ''}
+                            onChange={e => setEditFormData(fd => ({ ...fd, action: e.target.value }))}
+                            className="border border-gray-300 rounded px-2 py-1 w-full"
+                          >
+                            <option value="BUY">BUY</option>
+                            <option value="SELL">SELL</option>
+                          </select>
+                        </td>
                         <td>
                           <input
                             type="date"
@@ -655,18 +745,13 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
                             className="border border-gray-300 rounded px-2 py-1 w-full"
                           />
                         </td>
-
                         <td>
-                          <select
-                            value={editFormData.action || ''}
-                            onChange={e => setEditFormData(fd => ({ ...fd, action: e.target.value }))}
+                          <input
+                            value={editFormData.trade_type || ''}
+                            onChange={e => setEditFormData(fd => ({ ...fd, trade_type: e.target.value }))}
                             className="border border-gray-300 rounded px-2 py-1 w-full"
-                          >
-                            <option value="BUY">BUY</option>
-                            <option value="SELL">SELL</option>
-                          </select>
+                          />
                         </td>
-
                         <td>
                           <input
                             type="number"
@@ -702,13 +787,6 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
                             className="border border-gray-300 rounded px-2 py-1 w-full"
                           />
                         </td>
-                        <td>
-                          <input
-                            value={editFormData.trade_type || ''}
-                            onChange={e => setEditFormData(fd => ({ ...fd, trade_type: e.target.value }))}
-                            className="border border-gray-300 rounded px-2 py-1 w-full"
-                          />
-                        </td>
                         <td className="p-2">
                           <div className="flex items-center space-x-1">
                             <button onClick={() => saveEdit(trade.id)} className="text-xs px-1.5 py-0.5 bg-green-100 text-green-700 hover:bg-green-200 rounded-sm">
@@ -730,9 +808,6 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
                             onChange={() => toggleSelect(trade.id)}
                           />
                         </td>
-                        <td className="p-2">{trade.portfolioName}</td>
-                        <td className="p-2">{new Date(trade.tradeDate).toISOString().split('T')[0]}</td>
-                        {(trade.trade_type === 'OPTION') ? <td className="p-2 font-medium">{trade.usymbol}</td> : <td className="p-2 font-medium">{trade.symbol}</td>}
                         <td className="p-2 capitalize">
                           <span className={
                             trade.action.toLowerCase() === 'buy'
@@ -742,11 +817,14 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
                             {trade.action}
                           </span>
                         </td>
+                        {/* <td className="p-2">{new Date(trade.tradeDate).toLocaleString()}</td> */}
+                        <td className="p-2">{new Date(trade.tradeDate).toISOString().split('T')[0]}</td>
+                        {(trade.trade_type === 'OPTION') ? <td className="p-2 font-medium">{trade.usymbol}</td> : <td className="p-2 font-medium">{trade.symbol}</td>}
+                        <td className="p-2 font-medium">{trade.trade_type}</td>
                         <td className="p-2">{trade.quantity}</td>
                         <td className="p-2">${trade.price.toFixed(2)}</td>
                         <td className="p-2">${trade.commission.toFixed(2)}</td>
                         <td className="p-2">${trade.netAmount.toFixed(2)}</td>
-                        <td className="p-2 font-medium">{trade.trade_type}</td>
                         <td className="p-2">
                           <button onClick={() => startEdit(trade)} className="px-3 py-1 bg-green-500 text-white rounded hover:bg-green-600 text-sm">
                             Edit
@@ -898,4 +976,4 @@ const ManageTrades: React.FC<ManageTradesProps> = ({ token, isAuthenticated, ref
   );
 };
 
-export default ManageTrades;
+export default TradeMatching;

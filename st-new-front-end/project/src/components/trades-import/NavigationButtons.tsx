@@ -7,7 +7,7 @@ const NavigationButtons = ({ onBack, onNext }: {
     <div className="flex justify-between mt-8">
       <button
         onClick={onBack}
-        className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 bg-white hover:bg-gray-50"
+        className="px-4 py-2 border bg-gray-500 text-white rounded hover:bg-gray-600"
       >
         <ChevronLeft size={16} className="inline mr-2" /> Back
       </button>

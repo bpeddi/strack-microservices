@@ -1,6 +1,11 @@
 package com.simplytrack.strack_trade_service.controller;
 
+import com.simplytrack.strack_trade_service.repository.MatchedTradeRepository;
 import com.simplytrack.strack_trade_service.repository.TradeRepository;
+import com.simplytrack.strack_trade_service.service.TradeMatchingService;
+import com.simplytrack.strack_trade_service.DTO.MatchedTradeDTO;
+import com.simplytrack.strack_trade_service.entity.MatchedTrade;
+import com.simplytrack.strack_trade_service.entity.StockMatch;
 // import com.simplytrack.strack_trade_service.config.JwtTokenUtil;
 import com.simplytrack.strack_trade_service.entity.Trade;
 
@@ -13,12 +18,11 @@ import org.springframework.web.bind.annotation.*;
 
 import lombok.extern.slf4j.Slf4j;
 
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.function.Supplier;
+
 import java.util.logging.Logger;
 
 @Slf4j
@@ -30,13 +34,17 @@ public class TradeController {
     // private JwtTokenUtil jwtTokenUtil;
 
     private final TradeRepository tradeRepository;
+    private final MatchedTradeRepository matchRepo;
+    private final TradeMatchingService matcher;
+
     Logger logger = Logger.getLogger(getClass().getName());
 
-    public TradeController(TradeRepository tradeRepository) {
+    public TradeController(TradeRepository tradeRepository, TradeMatchingService matcher,
+            MatchedTradeRepository matchRepo) {
         this.tradeRepository = tradeRepository;
+        this.matcher = matcher;
+        this.matchRepo = matchRepo;
     }
-
-
 
     @PostMapping
     public ResponseEntity<Trade> createTrade(@RequestBody Trade tradeRequest, Authentication authentication) {
@@ -50,7 +58,8 @@ public class TradeController {
     }
 
     private Long convertToLong(Object obj) {
-        if (obj == null) return null;
+        if (obj == null)
+            return null;
         try {
             if (obj instanceof String) {
                 return Long.parseLong((String) obj);
@@ -62,6 +71,7 @@ public class TradeController {
         }
         return null;
     }
+
     @PostMapping("/delete")
     public ResponseEntity<?> deleteTrade(@RequestBody Map<String, String> request,
             Authentication authentication) {
@@ -69,13 +79,13 @@ public class TradeController {
             String userId = authentication.getName();
             Object tradeIdObj = request.get("id");
             Long tradeId = convertToLong(tradeIdObj);
-            logger.info((String) tradeIdObj);
-            logger.info((String) userId);
-            
+            // logger.info((String) tradeIdObj);
+            // logger.info((String) userId);
+
             try {
-                if (tradeIdObj instanceof String ) {
+                if (tradeIdObj instanceof String) {
                     tradeId = Long.parseLong((String) tradeIdObj);
-                } else if (tradeIdObj instanceof Number ) {
+                } else if (tradeIdObj instanceof Number) {
                     tradeId = ((Number) tradeIdObj).longValue();
                 }
             } catch (NumberFormatException e) {
@@ -84,7 +94,7 @@ public class TradeController {
             }
 
             // Validate input
-            if (tradeId == null ) {
+            if (tradeId == null) {
                 return ResponseEntity.badRequest().body("Trade ID is required");
             }
 
@@ -133,19 +143,18 @@ public class TradeController {
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateTrade(
-        @PathVariable Long id,
-        @RequestBody Trade updatedTrade,
-        Authentication authentication
-    ) {
+            @PathVariable Long id,
+            @RequestBody Trade updatedTrade,
+            Authentication authentication) {
         String userId = authentication.getName();
-        
+
         // 1. Find existing trade
         Optional<Trade> existingTrade = tradeRepository.findByIdAndUserId(id, userId);
-        
+
         if (existingTrade.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        
+
         // 2. Update fields
         Trade trade = existingTrade.get();
         trade.setSymbol(updatedTrade.getSymbol());
@@ -154,16 +163,15 @@ public class TradeController {
         trade.setCommission(updatedTrade.getCommission());
         trade.setAction(updatedTrade.getAction());
         trade.setTradeDate(updatedTrade.getTradeDate());
-        
+
         // 3. Recalculate net amount if needed
         trade.setNetAmount(
-            trade.getPrice().multiply(BigDecimal.valueOf(trade.getQuantity()))
-                .subtract(trade.getCommission())
-        );
-        
+                trade.getPrice().multiply(trade.getQuantity())
+                        .subtract(trade.getCommission()));
+
         // 4. Save updated trade
         Trade savedTrade = tradeRepository.save(trade);
-        
+
         return ResponseEntity.ok(savedTrade);
     }
 
@@ -171,30 +179,32 @@ public class TradeController {
     public ResponseEntity<List<Trade>> createBatchTrades(@RequestBody List<Trade> trades,
             Authentication authentication) {
         String userId = authentication.getName();
-    
+
         trades.forEach(trade -> {
             // Set user ID
             trade.setUserId(userId);
-            
+            trade.setMatchedQtyLeft(trade.getQuantity());
+
             // Handle null values for price and commission
             BigDecimal price = trade.getPrice() != null ? trade.getPrice() : BigDecimal.ZERO;
             BigDecimal commission = trade.getCommission() != null ? trade.getCommission() : BigDecimal.ZERO;
-            
+            BigDecimal fee = trade.getCommission() != null ? trade.getCommission() : BigDecimal.ZERO;
             // Calculate netAmount if not already set
-            if (trade.getNetAmount() == null) {
-                BigDecimal quantity = BigDecimal.valueOf(trade.getQuantity());
+            if (trade.getNetAmount() == null || trade.getNetAmount() == BigDecimal.ZERO) {
+                BigDecimal quantity = trade.getQuantity();
                 BigDecimal grossAmount = price.multiply(quantity);
-                BigDecimal netAmount = grossAmount.subtract(commission);
+                BigDecimal totalfee = commission.add(fee);
+                BigDecimal netAmount = grossAmount.subtract(totalfee);
                 trade.setNetAmount(netAmount);
             }
         });
-        
+
         for (int i = 0; i < trades.size() && i < 2; i++) {
             Trade trade = trades.get(i);
             logger.info(() -> "Trade: " + trade.toString());
             logger.info(() -> "Trade Date: " + trade.getTradeDate());
         }
-    
+
         List<Trade> savedTrades = tradeRepository.saveAll(trades);
         return ResponseEntity.ok(savedTrades);
     }
@@ -205,4 +215,43 @@ public class TradeController {
         List<Trade> trades = tradeRepository.findByUserId(userId);
         return ResponseEntity.ok(trades);
     }
+
+    @GetMapping("/tradeCount")
+    public ResponseEntity<Long> getTradesCount(Authentication authentication) {
+        String userId = authentication.getName();
+        return ResponseEntity.ok(tradeRepository.getTradesCount(userId));
+    }
+
+    @GetMapping("/matchedTrades")
+    public ResponseEntity<List<MatchedTradeDTO>> getMatchedTradesByUser(
+            @RequestParam("userId") String userId) {
+        
+        List<MatchedTradeDTO> matchedTrades = 
+            matchRepo.findMatchedTradesByUser(userId);
+            
+        return ResponseEntity.ok(matchedTrades);
+    }
+
+    /**
+     * POST /api/trades/match
+     * Triggers matching across all portfolios & returns the list of new matches.
+     */
+    @PostMapping("/match")
+    public ResponseEntity<List<MatchedTrade>> matchTrades(Authentication auth) {
+        // optional: scope to userId only
+        matcher.resetMatchTrades(auth);
+        matcher.resetMatchQuantityLeft(auth);
+        List<MatchedTrade> matched = matcher.matchAll();
+        return ResponseEntity.ok(matched);
+    }
+
+    // @Transactional
+    // public void resetMatchTrades(Authentication authentication) {
+    // String userId = authentication.getName();
+    // System.out.println("Resetting matches for user: " + userId);
+    // // Delete both stock and option matches where user is involved in either side
+    // matchRepo.deleteStockMatchesByUser(userId);
+    // matchRepo.deleteOptionMatchesByUser(userId);
+    // }
+
 }

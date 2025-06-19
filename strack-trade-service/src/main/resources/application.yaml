@@ -30,8 +30,11 @@ spring:
     name:  strack-trade-service
   profiles:
     active: dev
+  jpa:
+    show-sql: true
   cloud:
     config:
       uri: http://localhost:8888
   config:
     import: "optional:configserver:http://localhost:8888"
+
